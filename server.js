@@ -34,7 +34,7 @@ function gainXP(p,amount){
   if(!p||p.level>=MAX_LEVEL)return;
   p.xp+=Math.max(1,Math.round(amount));
   while(p.level<MAX_LEVEL&&p.xp>=p.nextXp){
-    p.xp-=p.nextXp;p.level++;p.statPoints++;p.nextXp=levelNeed(p.level);applyLevelStats(p);
+    p.xp-=p.nextXp;p.level++;p.statPoints+=3;p.nextXp=levelNeed(p.level);applyLevelStats(p);
   }
   if(p.level>=MAX_LEVEL){p.level=MAX_LEVEL;p.xp=0;p.nextXp=0;}
 }
@@ -68,7 +68,7 @@ function randomPickupKind(){
   return'laser';
 }
 function spawnPickup(kind=null,x=null,y=null){
-  const p={id:'p'+pickupSeq++,kind:kind||randomPickupKind(),x:x??rnd(70,WORLD.w-70),y:y??rnd(70,WORLD.h-70),life:9999};pickups.push(p);return p;
+  const p={id:'p'+pickupSeq++,kind:kind||randomPickupKind(),x:x??rnd(70,WORLD.w-70),y:y??rnd(70,WORLD.h-70),life:10};pickups.push(p);return p;
 }
 
 for(let i=0;i<6;i++)spawnBot();
@@ -141,6 +141,12 @@ function grenadeFx(x,y,owner){for(let i=0;i<16;i++){const a=i*Math.PI*2/16;bulle
 
 function tick(){
   const dt=.05,now=Date.now()/1000;
+
+  // 필드 아이템은 생성 후 10초가 지나면 자동 삭제
+  for(let i=pickups.length-1;i>=0;i--){
+    pickups[i].life-=dt;
+    if(pickups[i].life<=0)pickups.splice(i,1);
+  }
   for(const p of players.values()){
     if(!p.alive)continue;
     let dx=(p.keys.d?1:0)-(p.keys.a?1:0),dy=(p.keys.s?1:0)-(p.keys.w?1:0),l=Math.hypot(dx,dy)||1;dx/=l;dy/=l;
