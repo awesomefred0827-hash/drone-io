@@ -26,7 +26,20 @@ const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
 function mkInv(){ return {coins:Math.floor(rnd(8,36)), bombs:Math.floor(rnd(0,4)), potions:Math.floor(rnd(0,4))}; }
 function spawnBot(){
  const id='bot'+botSeq++;
- bots.set(id,{id,name:'BOT-'+id.slice(3),x:rnd(100,WORLD.w-100),y:rnd(100,WORLD.h-100),angle:0,r:22,hp:62,maxHp:62,speed:rnd(115,145),damage:8,reload:rnd(.72,.9),lastShot:0,inv:mkInv(),strafe:Math.random()<.5?-1:1,score:0});
+ // Spawn bots spread across the map so they do not form one swarm.
+ let x=rnd(120,WORLD.w-120), y=rnd(120,WORLD.h-120);
+ for(let tries=0; tries<30; tries++){
+  const tooClose=[...bots.values()].some(b=>Math.hypot(b.x-x,b.y-y)<420);
+  if(!tooClose) break;
+  x=rnd(120,WORLD.w-120); y=rnd(120,WORLD.h-120);
+ }
+ bots.set(id,{
+  id,name:'BOT-'+id.slice(3),x,y,angle:rnd(0,Math.PI*2),r:22,
+  // Roughly 20% weaker than a fresh player.
+  hp:80,maxHp:80,speed:rnd(175,195),damage:19,reload:rnd(.42,.5),lastShot:0,
+  inv:mkInv(),strafe:Math.random()<.5?-1:1,score:0,
+  wanderAngle:rnd(0,Math.PI*2),wanderTimer:rnd(.8,2.4)
+ });
 }
 function spawnWild(){
  const id='wild'+wildSeq++, type=Math.random()<.6?'crawler':'orb', hp=type==='crawler'?70:45;
@@ -78,12 +91,37 @@ function tick(){
   const sp=p.speed*(boosting?1.65:1);p.x=clamp(p.x+dx*sp*dt,p.r,WORLD.w-p.r);p.y=clamp(p.y+dy*sp*dt,p.r,WORLD.h-p.r);
   for(let i=pickups.length-1;i>=0;i--){const q=pickups[i];if(Math.hypot(p.x-q.x,p.y-q.y)<p.r+18){if(q.kind==='coin')p.coins++;if(q.kind==='bomb')p.bombs++;if(q.kind==='potion')p.potions++;pickups.splice(i,1);}}
  }
- // bots: lower stats, much more aggressive
+ // bots: weaker than players, but aggressive only after they actually encounter you.
  for(const e of bots.values()){
-  const [target,d]=nearestHuman(e); if(!target)continue; e.angle=Math.atan2(target.y-e.y,target.x-e.x);
-  if(d>140){e.x+=Math.cos(e.angle)*e.speed*dt;e.y+=Math.sin(e.angle)*e.speed*dt}else{e.x+=Math.cos(e.angle+Math.PI/2*e.strafe)*e.speed*.8*dt;e.y+=Math.sin(e.angle+Math.PI/2*e.strafe)*e.speed*.8*dt}
+  const [target,d]=nearestHuman(e);
+  const AGGRO_RANGE=460;
+  if(target && d<AGGRO_RANGE){
+   e.angle=Math.atan2(target.y-e.y,target.x-e.x);
+   if(d>135){
+    e.x+=Math.cos(e.angle)*e.speed*dt;
+    e.y+=Math.sin(e.angle)*e.speed*dt;
+   }else{
+    e.x+=Math.cos(e.angle+Math.PI/2*e.strafe)*e.speed*.62*dt;
+    e.y+=Math.sin(e.angle+Math.PI/2*e.strafe)*e.speed*.62*dt;
+   }
+   if(d<500&&now-e.lastShot>=e.reload){
+    e.lastShot=now;
+    bullets.push({id:'bb'+Math.random(),owner:e.id,x:e.x+Math.cos(e.angle)*38,y:e.y+Math.sin(e.angle)*38,vx:Math.cos(e.angle)*470,vy:Math.sin(e.angle)*470,r:6,life:1.55,damage:e.damage,enemy:true});
+   }
+  }else{
+   // No nearby player: roam the map instead of homing in from across the world.
+   e.wanderTimer-=dt;
+   if(e.wanderTimer<=0){
+    e.wanderTimer=rnd(.8,2.4);
+    e.wanderAngle+=rnd(-1.25,1.25);
+   }
+   e.angle=e.wanderAngle;
+   e.x+=Math.cos(e.wanderAngle)*e.speed*.34*dt;
+   e.y+=Math.sin(e.wanderAngle)*e.speed*.34*dt;
+   if(e.x<80||e.x>WORLD.w-80){e.wanderAngle=Math.PI-e.wanderAngle;e.x=clamp(e.x,80,WORLD.w-80)}
+   if(e.y<80||e.y>WORLD.h-80){e.wanderAngle=-e.wanderAngle;e.y=clamp(e.y,80,WORLD.h-80)}
+  }
   e.x=clamp(e.x,e.r,WORLD.w-e.r);e.y=clamp(e.y,e.r,WORLD.h-e.r);
-  if(d<760&&now-e.lastShot>=e.reload){e.lastShot=now;bullets.push({id:'bb'+Math.random(),owner:e.id,x:e.x+Math.cos(e.angle)*38,y:e.y+Math.sin(e.angle)*38,vx:Math.cos(e.angle)*430,vy:Math.sin(e.angle)*430,r:6,life:1.8,damage:e.damage,enemy:true});}
  }
  for(const w of wilds.values()){
   const [target,d]=nearestHuman(w); if(target&&w.type==='crawler'&&d<260){w.angle=Math.atan2(target.y-w.y,target.x-w.x);w.x+=Math.cos(w.angle)*w.speed*1.15*dt;w.y+=Math.sin(w.angle)*w.speed*1.15*dt}else if(target&&w.type==='orb'&&d<220){w.angle=Math.atan2(target.y-w.y,target.x-w.x)+Math.PI;w.x+=Math.cos(w.angle)*w.speed*dt;w.y+=Math.sin(w.angle)*w.speed*dt}else{w.turn-=dt;if(w.turn<=0){w.turn=rnd(.6,1.6);w.angle+=rnd(-1.6,1.6)}w.x+=Math.cos(w.angle)*w.speed*.5*dt;w.y+=Math.sin(w.angle)*w.speed*.5*dt}
