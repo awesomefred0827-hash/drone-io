@@ -3,9 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>DRONE.IO v7.4</title>
+<title>DRONE.IO</title>
 
 <style>
+*{box-sizing:border-box}
 html,body{
   margin:0;
   width:100%;
@@ -14,103 +15,130 @@ html,body{
   background:#d8dadd;
   font-family:Arial,sans-serif;
 }
-
 canvas{
   display:block;
+}
+#game{
+  position:fixed;
+  inset:0;
   width:100%;
   height:100%;
 }
-
 #hud{
   position:fixed;
-  left:18px;
-  top:18px;
-  background:rgba(20,24,30,.78);
-  color:white;
-  padding:12px 14px;
+  left:16px;
+  top:16px;
+  width:230px;
+  padding:12px;
   border-radius:10px;
-  font-size:14px;
-  min-width:220px;
+  background:rgba(20,24,30,.80);
+  color:#fff;
+  font-size:13px;
   pointer-events:none;
 }
-
+.title{
+  font-size:20px;
+  font-weight:bold;
+  margin-bottom:6px;
+}
 .bar{
-  height:10px;
-  background:#333;
+  height:9px;
+  background:#34383f;
   border-radius:6px;
   overflow:hidden;
-  margin-top:4px;
-  margin-bottom:8px;
+  margin:3px 0 7px;
 }
-
-.fill{
-  height:100%;
-}
-
-#hpFill{background:#ef5350;}
-#energyFill{background:#29b6f6;}
-#xpFill{background:#ffd54f;}
+.fill{height:100%;width:0}
+#hpFill{background:#ef5350}
+#energyFill{background:#29b6f6}
+#xpFill{background:#ffd54f}
 
 #inventory{
   position:fixed;
-  bottom:20px;
+  bottom:18px;
   left:50%;
   transform:translateX(-50%);
   display:flex;
-  gap:10px;
+  gap:8px;
 }
-
 .slot{
-  width:82px;
-  height:58px;
-  border:2px solid rgba(255,255,255,.8);
-  border-radius:10px;
+  min-width:82px;
+  padding:7px 10px;
+  border:2px solid rgba(255,255,255,.85);
+  border-radius:9px;
   background:rgba(20,24,30,.82);
-  color:white;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  justify-content:center;
-  font-size:13px;
+  color:#fff;
+  text-align:center;
+  font-size:12px;
 }
+.slot .icon{font-size:22px}
 
-.slot .icon{
-  font-size:22px;
+#controls{
+  position:fixed;
+  top:16px;
+  right:16px;
+  padding:10px 12px;
+  border-radius:8px;
+  background:rgba(20,24,30,.72);
+  color:white;
+  font-size:12px;
+  line-height:1.5;
+  pointer-events:none;
 }
 
 #minimap{
   position:fixed;
-  right:18px;
-  bottom:18px;
+  right:16px;
+  bottom:16px;
   width:200px;
   height:130px;
-  border:2px solid rgba(255,255,255,.85);
-  background:rgba(20,24,30,.72);
+  border:2px solid rgba(255,255,255,.9);
   border-radius:8px;
-}
-
-#info{
-  position:fixed;
-  right:18px;
-  top:18px;
   background:rgba(20,24,30,.75);
-  color:#fff;
-  padding:10px 12px;
-  border-radius:8px;
-  font-size:13px;
 }
 
-#message{
+#death{
+  display:none;
   position:fixed;
-  top:18px;
   left:50%;
+  top:50%;
+  transform:translate(-50%,-50%);
+  min-width:300px;
+  padding:25px;
+  border-radius:14px;
+  background:rgba(15,18,24,.94);
+  color:#fff;
+  text-align:center;
+}
+#death h1{
+  margin:0 0 12px;
+  font-size:36px;
+}
+#deathStats{
+  line-height:1.8;
+  margin-bottom:18px;
+}
+#playAgain{
+  width:100%;
+  padding:12px;
+  border:0;
+  border-radius:8px;
+  background:#fff;
+  color:#111;
+  font-weight:bold;
+  font-size:16px;
+  cursor:pointer;
+}
+#connecting{
+  position:fixed;
+  left:50%;
+  top:18px;
   transform:translateX(-50%);
+  padding:7px 12px;
   background:rgba(0,0,0,.65);
   color:white;
-  padding:8px 14px;
-  border-radius:8px;
-  opacity:0;
-  transition:opacity .2s;
+  border-radius:7px;
+  font-size:13px;
 }
 </style>
 </head>
@@ -120,110 +148,111 @@ canvas{
 <canvas id="game"></canvas>
 <canvas id="minimap" width="200" height="130"></canvas>
 
+<div id="connecting">서버 연결 중...</div>
+
 <div id="hud">
-  <b>DRONE.IO</b>
+  <div class="title">DRONE.IO</div>
+
   <div id="levelText">LEVEL 1</div>
 
   <div>HP</div>
-  <div class="bar"><div id="hpFill" class="fill"></div></div>
+  <div class="bar">
+    <div id="hpFill" class="fill"></div>
+  </div>
 
   <div>BOOST</div>
-  <div class="bar"><div id="energyFill" class="fill"></div></div>
+  <div class="bar">
+    <div id="energyFill" class="fill"></div>
+  </div>
 
   <div id="xpText">XP 0 / 100</div>
-  <div class="bar"><div id="xpFill" class="fill"></div></div>
+  <div class="bar">
+    <div id="xpFill" class="fill"></div>
+  </div>
 
-  <div>💰 <span id="coinText">0</span></div>
+  <div>
+    🪙 COIN:
+    <span id="coinText">0</span>
+  </div>
 </div>
 
-<div id="info">
-  WASD : 이동<br>
-  Mouse : 조준<br>
-  Click : 발사<br>
-  SPACE : 부스트<br>
-  Q : 폭탄<br>
-  E : 포션<br>
-  R : 레이저 조준기
+<div id="controls">
+  WASD 이동<br>
+  마우스 조준<br>
+  클릭 발사<br>
+  SPACE 부스트<br>
+  Q 폭탄<br>
+  E 포션<br>
+  R 레이저
 </div>
 
 <div id="inventory">
 
   <div class="slot">
     <div class="icon">💣</div>
-    Q 폭탄
-    <span id="bombText">0</span>
+    Q 폭탄<br>
+    <b id="bombText">0</b>
   </div>
 
   <div class="slot">
     <div class="icon">🧪</div>
-    E 포션
-    <span id="potionText">0</span>
+    E 포션<br>
+    <b id="potionText">0</b>
   </div>
 
   <div class="slot">
     <div class="icon">🔴</div>
-    R 레이저
-    <span id="laserText">0</span>
+    R 레이저<br>
+    <b id="laserText">0</b>
   </div>
 
 </div>
 
-<div id="message"></div>
+<div id="death">
+  <h1>YOU DIED</h1>
+  <div id="deathStats"></div>
+  <button id="playAgain">PLAY AGAIN</button>
+</div>
 
 <script>
+const canvas=document.getElementById("game");
+const ctx=canvas.getContext("2d");
 
-const canvas =
-  document.getElementById("game");
+const minimap=document.getElementById("minimap");
+const mctx=minimap.getContext("2d");
 
-const ctx =
-  canvas.getContext("2d");
+const hpFill=document.getElementById("hpFill");
+const energyFill=document.getElementById("energyFill");
+const xpFill=document.getElementById("xpFill");
 
-const minimap =
-  document.getElementById("minimap");
+const levelText=document.getElementById("levelText");
+const xpText=document.getElementById("xpText");
+const coinText=document.getElementById("coinText");
+const bombText=document.getElementById("bombText");
+const potionText=document.getElementById("potionText");
+const laserText=document.getElementById("laserText");
 
-const mctx =
-  minimap.getContext("2d");
+const death=document.getElementById("death");
+const deathStats=document.getElementById("deathStats");
+const playAgain=document.getElementById("playAgain");
+const connecting=document.getElementById("connecting");
 
 function resize(){
-  canvas.width =
-    window.innerWidth;
-
-  canvas.height =
-    window.innerHeight;
+  canvas.width=window.innerWidth;
+  canvas.height=window.innerHeight;
 }
-
-window.addEventListener(
-  "resize",
-  resize
-);
-
 resize();
+window.addEventListener("resize",resize);
 
-/* =====================
-   NETWORK
-===================== */
+let myId=null;
+let alive=false;
 
-const protocol =
-  location.protocol ===
-  "https:"
-  ? "wss:"
-  : "ws:";
-
-const ws =
-  new WebSocket(
-    protocol +
-    "//" +
-    location.host
-  );
-
-let myId = null;
-
-let world = {
+let world={
   w:2800,
   h:1800
 };
 
-let state = {
+let state={
   players:[],
   bots:[],
   wilds:[],
@@ -232,404 +261,362 @@ let state = {
   pickups:[]
 };
 
-ws.onmessage = e => {
+let lastPlayerData=null;
 
-  const msg =
-    JSON.parse(e.data);
+/* =========================
+   NETWORK
+========================= */
 
-  if(
-    msg.t ===
-    "welcome"
-  ){
-    myId =
-      msg.id;
+const protocol=
+  location.protocol==="https:"
+  ?"wss:"
+  :"ws:";
+
+const ws=new WebSocket(
+  protocol+"//"+location.host
+);
+
+ws.onopen=()=>{
+  connecting.textContent="연결됨";
+  setTimeout(()=>{
+    connecting.style.display="none";
+  },800);
+};
+
+ws.onerror=()=>{
+  connecting.style.display="block";
+  connecting.textContent="서버 연결 오류";
+};
+
+ws.onclose=()=>{
+  connecting.style.display="block";
+  connecting.textContent="서버 연결 끊김";
+};
+
+ws.onmessage=e=>{
+  let msg;
+
+  try{
+    msg=JSON.parse(e.data);
+  }catch{
+    return;
+  }
+
+  if(msg.t==="welcome"){
+    myId=msg.id;
+    alive=true;
 
     if(msg.world){
-      world =
-        msg.world;
+      world=msg.world;
+    }
+
+    death.style.display="none";
+  }
+
+  if(msg.t==="state"){
+    state=msg;
+
+    if(msg.world){
+      world=msg.world;
+    }
+
+    const me=getMe();
+
+    if(me){
+      lastPlayerData={...me};
+      alive=true;
     }
   }
 
-  if(
-    msg.t ===
-    "state"
-  ){
-    state =
-      msg;
+  if(msg.t==="dead"){
+    alive=false;
 
-    if(msg.world){
-      world =
-        msg.world;
+    if(msg.stats){
+      lastPlayerData=msg.stats;
     }
+
+    showDeath();
   }
 
-  if(
-    msg.t ===
-    "message"
-  ){
-    showMessage(
-      msg.text
-    );
+  if(msg.t==="respawned"){
+    alive=true;
+    death.style.display="none";
   }
 };
 
-/* =====================
+function send(data){
+  if(ws.readyState===WebSocket.OPEN){
+    ws.send(JSON.stringify(data));
+  }
+}
+
+function getMe(){
+  return state.players.find(
+    p=>p.id===myId
+  );
+}
+
+/* =========================
+   DEATH / PLAY AGAIN
+========================= */
+
+function showDeath(){
+  const s=lastPlayerData||{};
+
+  deathStats.innerHTML=
+    "LEVEL: <b>"+(s.level||1)+"</b><br>"+
+    "SCORE: <b>"+(s.score||0)+"</b><br>"+
+    "COIN: <b>"+(s.coins||0)+"</b>";
+
+  death.style.display="block";
+}
+
+playAgain.addEventListener(
+  "click",
+  ()=>{
+    send({t:"respawn"});
+  }
+);
+
+/* =========================
    INPUT
-===================== */
+========================= */
 
-const keys = {};
+const keys={};
 
-let mouse = {
-  x:0,
-  y:0
+let mouse={
+  x:window.innerWidth/2,
+  y:window.innerHeight/2
 };
 
-let shooting =
-  false;
+let shooting=false;
 
 window.addEventListener(
   "keydown",
-  e => {
+  e=>{
+    const k=e.key.toLowerCase();
 
-    const key =
-      e.key.toLowerCase();
+    keys[k]=true;
 
-    keys[key] =
-      true;
-
-    if(
-      e.code ===
-      "Space"
-    ){
-      keys.space =
-        true;
-
+    if(e.code==="Space"){
+      keys.space=true;
       e.preventDefault();
     }
 
-    if(
-      key === "q"
-    ){
-      send({
-        t:"bomb"
-      });
+    if(!alive){
+      return;
     }
 
-    if(
-      key === "e"
-    ){
-      send({
-        t:"potion"
-      });
+    if(k==="q"){
+      send({t:"bomb"});
     }
 
-    if(
-      key === "r"
-    ){
-      send({
-        t:"laser"
-      });
+    if(k==="e"){
+      send({t:"potion"});
+    }
+
+    if(k==="r"){
+      send({t:"laser"});
     }
   }
 );
 
 window.addEventListener(
   "keyup",
-  e => {
+  e=>{
+    const k=e.key.toLowerCase();
 
-    const key =
-      e.key.toLowerCase();
+    keys[k]=false;
 
-    keys[key] =
-      false;
-
-    if(
-      e.code ===
-      "Space"
-    ){
-      keys.space =
-        false;
+    if(e.code==="Space"){
+      keys.space=false;
     }
   }
 );
 
 canvas.addEventListener(
   "mousemove",
-  e => {
-
-    mouse.x =
-      e.clientX;
-
-    mouse.y =
-      e.clientY;
+  e=>{
+    mouse.x=e.clientX;
+    mouse.y=e.clientY;
   }
 );
 
 canvas.addEventListener(
   "mousedown",
-  () => {
-    shooting =
-      true;
+  ()=>{
+    shooting=true;
   }
 );
 
 window.addEventListener(
   "mouseup",
-  () => {
-    shooting =
-      false;
+  ()=>{
+    shooting=false;
   }
 );
 
-function send(obj){
-
-  if(
-    ws.readyState ===
-    WebSocket.OPEN
-  ){
-    ws.send(
-      JSON.stringify(obj)
-    );
-  }
-}
-
-/* =====================
+/* =========================
    SEND INPUT
-===================== */
+========================= */
 
 setInterval(
-  () => {
+  ()=>{
+    if(!alive){
+      return;
+    }
 
-    const me =
-      getMe();
+    const me=getMe();
 
     if(!me){
       return;
     }
 
-    const angle =
-      Math.atan2(
-        mouse.y -
-        canvas.height/2,
-
-        mouse.x -
-        canvas.width/2
-      );
+    const angle=Math.atan2(
+      mouse.y-canvas.height/2,
+      mouse.x-canvas.width/2
+    );
 
     send({
       t:"input",
-
       keys:{
         w:!!keys.w,
         a:!!keys.a,
         s:!!keys.s,
         d:!!keys.d
       },
-
       angle,
-
-      boost:
-        !!keys.space
+      boost:!!keys.space
     });
 
     if(shooting){
-      send({
-        t:"shoot"
-      });
+      send({t:"shoot"});
     }
-
   },
   50
 );
 
-/* =====================
-   HELPERS
-===================== */
-
-function getMe(){
-
-  return state.players
-    .find(
-      p =>
-      p.id === myId
-    );
-}
-
-function showMessage(text){
-
-  const box =
-    document.getElementById(
-      "message"
-    );
-
-  box.textContent =
-    text;
-
-  box.style.opacity =
-    1;
-
-  clearTimeout(
-    showMessage.timer
-  );
-
-  showMessage.timer =
-    setTimeout(
-      () => {
-        box.style.opacity =
-          0;
-      },
-      1400
-    );
-}
-
-/* =====================
+/* =========================
    CAMERA
-===================== */
+========================= */
 
-function camera(){
-
-  const me =
-    getMe();
+function getCamera(){
+  const me=getMe();
 
   if(!me){
-    return {
-      x:0,
-      y:0
+    return{
+      x:world.w/2-canvas.width/2,
+      y:world.h/2-canvas.height/2
     };
   }
 
-  return {
-    x:
-      me.x -
-      canvas.width/2,
-
-    y:
-      me.y -
-      canvas.height/2
+  return{
+    x:me.x-canvas.width/2,
+    y:me.y-canvas.height/2
   };
 }
 
-function screenPos(
-  x,
-  y,
-  cam
-){
-  return {
-    x:
-      x -
-      cam.x,
-
-    y:
-      y -
-      cam.y
+function screenPos(x,y,cam){
+  return{
+    x:x-cam.x,
+    y:y-cam.y
   };
 }
 
-/* =====================
-   BACKGROUND
-===================== */
+/* =========================
+   BACKGROUND / MAP
+========================= */
 
-function drawGrid(cam){
-
-  ctx.fillStyle =
-    "#d8dadd";
-
+function drawBackground(cam){
+  ctx.fillStyle="#d8dadd";
   ctx.fillRect(
-    0,
-    0,
+    0,0,
     canvas.width,
     canvas.height
   );
 
-  const size =
-    50;
+  const grid=50;
 
-  ctx.strokeStyle =
-    "rgba(70,75,80,.12)";
+  ctx.strokeStyle="rgba(70,75,80,.12)";
+  ctx.lineWidth=1;
 
-  ctx.lineWidth =
-    1;
-
-  const startX =
-    -(
-      cam.x %
-      size
-    );
-
-  const startY =
-    -(
-      cam.y %
-      size
-    );
+  const sx=-(cam.x%grid);
+  const sy=-(cam.y%grid);
 
   for(
-    let x =
-      startX;
-    x <
-      canvas.width;
-    x += size
+    let x=sx;
+    x<canvas.width;
+    x+=grid
   ){
     ctx.beginPath();
-
-    ctx.moveTo(
-      x,
-      0
-    );
-
-    ctx.lineTo(
-      x,
-      canvas.height
-    );
-
+    ctx.moveTo(x,0);
+    ctx.lineTo(x,canvas.height);
     ctx.stroke();
   }
 
   for(
-    let y =
-      startY;
-    y <
-      canvas.height;
-    y += size
+    let y=sy;
+    y<canvas.height;
+    y+=grid
   ){
     ctx.beginPath();
-
-    ctx.moveTo(
-      0,
-      y
-    );
-
-    ctx.lineTo(
-      canvas.width,
-      y
-    );
-
+    ctx.moveTo(0,y);
+    ctx.lineTo(canvas.width,y);
     ctx.stroke();
   }
 
-  const topLeft =
-    screenPos(
-      0,
-      0,
-      cam
-    );
+  const edge=screenPos(
+    0,0,cam
+  );
 
-  ctx.strokeStyle =
-    "#666";
-
-  ctx.lineWidth =
-    5;
+  ctx.strokeStyle="#666";
+  ctx.lineWidth=5;
 
   ctx.strokeRect(
-    topLeft.x,
-    topLeft.y,
+    edge.x,
+    edge.y,
     world.w,
     world.h
   );
 }
 
-/* =====================
-   DRONE
-===================== */
+/* =========================
+   SHAPE HELPERS
+========================= */
+
+function polygon(
+  x,
+  y,
+  radius,
+  sides,
+  rotation=0
+){
+  ctx.beginPath();
+
+  for(let i=0;i<sides;i++){
+    const a=
+      rotation+
+      Math.PI*2*i/sides;
+
+    const px=
+      x+Math.cos(a)*radius;
+
+    const py=
+      y+Math.sin(a)*radius;
+
+    if(i===0){
+      ctx.moveTo(px,py);
+    }else{
+      ctx.lineTo(px,py);
+    }
+  }
+
+  ctx.closePath();
+}
+
+/* =========================
+   DRONES
+========================= */
 
 function drawDrone(
   entity,
@@ -637,473 +624,292 @@ function drawDrone(
   color,
   isMe=false
 ){
+  const p=screenPos(
+    entity.x,
+    entity.y,
+    cam
+  );
 
-  const p =
-    screenPos(
-      entity.x,
-      entity.y,
-      cam
-    );
-
-  const angle =
-    entity.angle || 0;
+  const a=entity.angle||0;
+  const lv=entity.level||1;
 
   ctx.save();
+  ctx.translate(p.x,p.y);
+  ctx.rotate(a);
 
-  ctx.translate(
-    p.x,
-    p.y
-  );
-
-  ctx.rotate(
-    angle
-  );
+  ctx.fillStyle=color;
+  ctx.strokeStyle="#34383d";
+  ctx.lineWidth=4;
 
   /*
-  레벨별 외형 변화
-  크기는 그대로.
+  크기는 레벨이 올라가도 동일.
+  모양/무기만 변화.
   */
 
-  const level =
-    entity.level || 1;
-
-  ctx.lineWidth =
-    4;
-
-  ctx.strokeStyle =
-    "#333";
-
-  ctx.fillStyle =
-    color;
-
-  if(level < 5){
-
-    /* 기본 원형 코어 */
-
+  if(lv<5){
     ctx.beginPath();
-
     ctx.arc(
-      0,
-      0,
-      22,
-      0,
-      Math.PI*2
+      0,0,22,
+      0,Math.PI*2
     );
-
     ctx.fill();
     ctx.stroke();
 
-    ctx.fillStyle =
-      "#555";
-
+    ctx.fillStyle="#555b63";
     ctx.fillRect(
-      10,
-      -7,
-      32,
-      14
+      8,-7,
+      35,14
     );
   }
 
-  else if(level < 10){
-
-    /*
-    Lv5
-    쌍포
-    */
-
+  else if(lv<10){
     ctx.beginPath();
-
     ctx.arc(
-      0,
-      0,
-      22,
-      0,
-      Math.PI*2
+      0,0,22,
+      0,Math.PI*2
     );
-
     ctx.fill();
     ctx.stroke();
 
-    ctx.fillStyle =
-      "#555";
+    ctx.fillStyle="#555b63";
 
     ctx.fillRect(
-      10,
-      -12,
-      32,
-      8
+      8,-13,
+      36,9
     );
 
     ctx.fillRect(
-      10,
-      4,
-      32,
-      8
+      8,4,
+      36,9
     );
   }
 
-  else if(level < 15){
-
-    /*
-    Lv10
-    육각형 코어
-    */
-
+  else if(lv<15){
     polygon(
-      ctx,
-      0,
-      0,
-      24,
-      6
+      0,0,
+      24,6,
+      Math.PI/6
     );
-
     ctx.fill();
     ctx.stroke();
 
-    ctx.fillStyle =
-      "#555";
+    ctx.fillStyle="#555b63";
 
     ctx.fillRect(
-      8,
-      -14,
-      34,
-      8
+      8,-15,
+      37,8
     );
 
     ctx.fillRect(
-      12,
-      -4,
-      34,
-      8
+      12,-4,
+      37,8
     );
 
     ctx.fillRect(
-      8,
-      6,
-      34,
-      8
+      8,7,
+      37,8
     );
   }
 
   else{
-
-    /*
-    Lv15+
-    다이아 코어
-    */
-
     ctx.beginPath();
 
-    ctx.moveTo(
-      27,
-      0
-    );
-
-    ctx.lineTo(
-      0,
-      24
-    );
-
-    ctx.lineTo(
-      -27,
-      0
-    );
-
-    ctx.lineTo(
-      0,
-      -24
-    );
+    ctx.moveTo(27,0);
+    ctx.lineTo(0,24);
+    ctx.lineTo(-27,0);
+    ctx.lineTo(0,-24);
 
     ctx.closePath();
-
     ctx.fill();
     ctx.stroke();
 
-    ctx.fillStyle =
-      "#444";
+    ctx.fillStyle="#4b5057";
 
     ctx.fillRect(
-      6,
-      -16,
-      40,
-      7
+      7,-17,
+      40,7
     );
 
     ctx.fillRect(
-      10,
-      -5,
-      40,
-      7
+      11,-6,
+      40,7
     );
 
     ctx.fillRect(
-      10,
-      5,
-      40,
-      7
+      11,5,
+      40,7
     );
 
     ctx.fillRect(
-      6,
-      12,
-      40,
-      7
+      7,16,
+      40,7
     );
   }
 
-  /*
-  가운데 코어
-  */
+  /* CORE */
 
   ctx.beginPath();
-
   ctx.arc(
-    0,
-    0,
-    6,
-    0,
-    Math.PI*2
+    0,0,6,
+    0,Math.PI*2
   );
 
-  ctx.fillStyle =
+  ctx.fillStyle=
     isMe
-    ? "#ffffff"
-    : "#ddd";
+    ?"#fff"
+    :"#ddd";
 
   ctx.fill();
 
   ctx.restore();
 
-  /* HP */
+  /* HP BAR */
 
-  const hpRatio =
+  const hpRatio=
     Math.max(
       0,
-      entity.hp /
-      entity.maxHp
+      (entity.hp||0)/
+      (entity.maxHp||100)
     );
 
-  ctx.fillStyle =
-    "#333";
+  ctx.fillStyle="#333";
 
   ctx.fillRect(
     p.x-24,
-    p.y-36,
-    48,
-    6
+    p.y-37,
+    48,6
   );
 
-  ctx.fillStyle =
+  ctx.fillStyle=
     isMe
-    ? "#4caf50"
-    : "#ef5350";
+    ?"#4caf50"
+    :"#ef5350";
 
   ctx.fillRect(
     p.x-24,
-    p.y-36,
+    p.y-37,
     48*hpRatio,
     6
   );
 
-  /*
-  이름/레벨
-  */
-
-  ctx.fillStyle =
-    "#222";
-
-  ctx.font =
-    "12px Arial";
-
-  ctx.textAlign =
-    "center";
+  ctx.fillStyle="#222";
+  ctx.font="12px Arial";
+  ctx.textAlign="center";
 
   ctx.fillText(
-    (
-      entity.name ||
-      "DRONE"
-    ) +
-    " Lv." +
-    (
-      entity.level ||
-      1
-    ),
-
+    (entity.name||"DRONE")+
+    " Lv."+
+    (entity.level||1),
     p.x,
-    p.y-44
+    p.y-45
   );
 
   /*
   레이저 조준기
   */
 
-  if(
-    entity.laserActive
-  ){
-
+  if(entity.laserActive){
     ctx.save();
 
-    ctx.strokeStyle =
-      "rgba(255,30,30,.75)";
+    ctx.strokeStyle=
+      "rgba(255,0,0,.75)";
 
-    ctx.lineWidth =
-      2;
-
-    ctx.setLineDash([
-      8,
-      6
-    ]);
+    ctx.lineWidth=2;
 
     ctx.beginPath();
 
     ctx.moveTo(
-      p.x +
-      Math.cos(angle)*30,
+      p.x+
+      Math.cos(a)*30,
 
-      p.y +
-      Math.sin(angle)*30
+      p.y+
+      Math.sin(a)*30
     );
 
     ctx.lineTo(
-      p.x +
-      Math.cos(angle)*650,
+      p.x+
+      Math.cos(a)*700,
 
-      p.y +
-      Math.sin(angle)*650
+      p.y+
+      Math.sin(a)*700
     );
 
     ctx.stroke();
+
+    /*
+    레드닷
+    */
+
+    ctx.beginPath();
+
+    ctx.arc(
+      p.x+
+      Math.cos(a)*700,
+
+      p.y+
+      Math.sin(a)*700,
+
+      4,
+      0,
+      Math.PI*2
+    );
+
+    ctx.fillStyle="red";
+    ctx.fill();
 
     ctx.restore();
   }
 }
 
-function polygon(
-  context,
-  x,
-  y,
-  radius,
-  sides
-){
+/* =========================
+   WILD CREATURES
+========================= */
 
-  context.beginPath();
-
-  for(
-    let i=0;
-    i<sides;
-    i++
-  ){
-
-    const a =
-      Math.PI*2 *
-      i/sides;
-
-    const px =
-      x +
-      Math.cos(a) *
-      radius;
-
-    const py =
-      y +
-      Math.sin(a) *
-      radius;
-
-    if(i===0){
-      context.moveTo(
-        px,
-        py
-      );
-    }else{
-      context.lineTo(
-        px,
-        py
-      );
-    }
-  }
-
-  context.closePath();
-}
-
-/* =====================
-   WILD
-===================== */
-
-function drawWild(
-  w,
-  cam
-){
-
-  const p =
-    screenPos(
-      w.x,
-      w.y,
-      cam
-    );
-
-  ctx.save();
-
-  ctx.translate(
-    p.x,
-    p.y
+function drawWild(w,cam){
+  const p=screenPos(
+    w.x,w.y,cam
   );
 
+  ctx.save();
+  ctx.translate(p.x,p.y);
+
   /*
-  야생은 플레이어와
-  완전히 다른 모양
+  플레이어 드론과 완전히 다른 모습
   */
 
-  if(
-    w.type ===
-    "crawler"
-  ){
+  if(w.type==="crawler"){
+    ctx.fillStyle="#795548";
+    ctx응, 이어서 줄게. **방금 코드가 또 중간에 잘렸어.**  
+`ctx.fillStyle="#795548";` 다음부터 **그대로 이어서 붙이면 돼.**
 
-    ctx.fillStyle =
-      "#795548";
-
-    ctx.strokeStyle =
-      "#4e342e";
-
-    ctx.lineWidth =
-      3;
+```html
+    ctx.strokeStyle="#4e342e";
+    ctx.lineWidth=3;
 
     polygon(
-      ctx,
-      0,
-      0,
-      20,
-      6
+      0,0,
+      20,6,
+      Math.PI/6
     );
 
     ctx.fill();
     ctx.stroke();
 
-    /*
-    작은 다리
-    */
-
-    ctx.strokeStyle =
-      "#4e342e";
-
-    for(
-      let i=0;
-      i<6;
-      i++
-    ){
-
-      const a =
-        Math.PI*2 *
-        i/6;
+    /* CRAWLER 다리 */
+    for(let i=0;i<6;i++){
+      const a=
+        Math.PI*2*i/6;
 
       ctx.beginPath();
 
       ctx.moveTo(
-        Math.cos(a)*15,
-        Math.sin(a)*15
+        Math.cos(a)*14,
+        Math.sin(a)*14
       );
 
       ctx.lineTo(
-        Math.cos(a)*27,
-        Math.sin(a)*27
+        Math.cos(a)*28,
+        Math.sin(a)*28
       );
 
       ctx.stroke();
@@ -1111,43 +917,544 @@ function drawWild(
   }
 
   else{
-
     /*
-    에너지 오브
+    WISP / ENERGY ORB
     */
-
     ctx.beginPath();
 
     ctx.arc(
-      0,
-      0,
-      16,
-      0,
-      Math.PI*2
+      0,0,16,
+      0,Math.PI*2
     );
 
-    ctx.fillStyle =
-      "#ab47bc";
-
+    ctx.fillStyle="#ab47bc";
     ctx.fill();
 
-    ctx.strokeStyle =
-      "#6a1b9a";
-
-    ctx.lineWidth =
-      3;
-
+    ctx.strokeStyle="#6a1b9a";
+    ctx.lineWidth=3;
     ctx.stroke();
 
     ctx.beginPath();
 
     ctx.arc(
+      0,0,7,
+      0,Math.PI*2
+    );
+
+    ctx.fillStyle="#e1bee7";
+    ctx.fill();
+  }
+
+  ctx.restore();
+
+  /* 야생 HP */
+
+  const hpRatio=
+    Math.max(
       0,
+      w.hp/w.maxHp
+    );
+
+  ctx.fillStyle="#333";
+
+  ctx.fillRect(
+    p.x-18,
+    p.y-30,
+    36,5
+  );
+
+  ctx.fillStyle="#ff9800";
+
+  ctx.fillRect(
+    p.x-18,
+    p.y-30,
+    36*hpRatio,
+    5
+  );
+}
+
+/* =========================
+   PICKUPS
+========================= */
+
+function drawPickup(q,cam){
+  const p=screenPos(
+    q.x,q.y,cam
+  );
+
+  ctx.save();
+  ctx.translate(p.x,p.y);
+
+  if(q.kind==="coin"){
+    /*
+    COIN
+    */
+    ctx.beginPath();
+
+    ctx.arc(
+      0,0,10,
+      0,Math.PI*2
+    );
+
+    ctx.fillStyle="#f6c344";
+    ctx.fill();
+
+    ctx.strokeStyle="#a87900";
+    ctx.lineWidth=2;
+    ctx.stroke();
+
+    ctx.fillStyle="#fff3b0";
+    ctx.font="bold 11px Arial";
+    ctx.textAlign="center";
+    ctx.textBaseline="middle";
+    ctx.fillText("$",0,1);
+  }
+
+  else if(q.kind==="potion"){
+    /*
+    POTION
+    */
+    ctx.fillStyle="#42a5f5";
+
+    ctx.beginPath();
+
+    ctx.roundRect(
+      -8,-7,
+      16,19,
+      4
+    );
+
+    ctx.fill();
+
+    ctx.fillStyle="#e3f2fd";
+
+    ctx.fillRect(
+      -5,-13,
+      10,7
+    );
+
+    ctx.strokeStyle="#1565c0";
+    ctx.lineWidth=2;
+
+    ctx.strokeRect(
+      -5,-13,
+      10,7
+    );
+  }
+
+  else if(q.kind==="bomb"){
+    /*
+    BOMB
+    */
+    ctx.beginPath();
+
+    ctx.arc(
+      0,2,10,
+      0,Math.PI*2
+    );
+
+    ctx.fillStyle="#272b31";
+    ctx.fill();
+
+    ctx.strokeStyle="#111";
+    ctx.lineWidth=2;
+    ctx.stroke();
+
+    ctx.beginPath();
+
+    ctx.moveTo(
+      5,-7
+    );
+
+    ctx.quadraticCurveTo(
+      11,-15,
+      15,-10
+    );
+
+    ctx.strokeStyle="#6d4c41";
+    ctx.lineWidth=3;
+    ctx.stroke();
+
+    ctx.beginPath();
+
+    ctx.arc(
+      15,-10,
+      3,
+      0,Math.PI*2
+    );
+
+    ctx.fillStyle="#ff5722";
+    ctx.fill();
+  }
+
+  else if(q.kind==="laser"){
+    /*
+    RED DOT / LASER ITEM
+    */
+    ctx.beginPath();
+
+    ctx.arc(
+      0,0,11,
+      0,Math.PI*2
+    );
+
+    ctx.fillStyle="#252a31";
+    ctx.fill();
+
+    ctx.strokeStyle="#111";
+    ctx.lineWidth=2;
+    ctx.stroke();
+
+    ctx.beginPath();
+
+    ctx.arc(
+      0,0,5,
+      0,Math.PI*2
+    );
+
+    ctx.fillStyle="#ff1744";
+    ctx.fill();
+
+    ctx.strokeStyle="#ff5252";
+    ctx.lineWidth=2;
+
+    ctx.beginPath();
+    ctx.moveTo(-16,0);
+    ctx.lineTo(-7,0);
+    ctx.moveTo(7,0);
+    ctx.lineTo(16,0);
+    ctx.moveTo(0,-16);
+    ctx.lineTo(0,-7);
+    ctx.moveTo(0,7);
+    ctx.lineTo(0,16);
+    ctx.stroke();
+  }
+
+  ctx.restore();
+}
+
+/* =========================
+   BULLETS
+========================= */
+
+function drawBullet(b,cam){
+  const p=screenPos(
+    b.x,b.y,cam
+  );
+
+  ctx.beginPath();
+
+  ctx.arc(
+    p.x,p.y,
+    b.r||5,
+    0,Math.PI*2
+  );
+
+  if(b.effect){
+    ctx.fillStyle=
+      "rgba(255,170,40,.75)";
+  }
+  else if(b.enemy){
+    ctx.fillStyle="#ef5350";
+  }
+  else{
+    ctx.fillStyle="#ffffff";
+  }
+
+  ctx.fill();
+
+  ctx.strokeStyle=
+    "rgba(0,0,0,.3)";
+
+  ctx.lineWidth=1;
+  ctx.stroke();
+}
+
+/* =========================
+   GRENADES
+========================= */
+
+function drawGrenade(g,cam){
+  const p=screenPos(
+    g.x,g.y,cam
+  );
+
+  ctx.beginPath();
+
+  ctx.arc(
+    p.x,p.y,
+    10,
+    0,Math.PI*2
+  );
+
+  ctx.fillStyle="#25282d";
+  ctx.fill();
+
+  ctx.strokeStyle="#111";
+  ctx.lineWidth=2;
+  ctx.stroke();
+
+  /*
+  작은 심지
+  */
+  ctx.beginPath();
+
+  ctx.moveTo(
+    p.x+5,
+    p.y-7
+  );
+
+  ctx.lineTo(
+    p.x+10,
+    p.y-13
+  );
+
+  ctx.strokeStyle="#ff7043";
+  ctx.lineWidth=3;
+  ctx.stroke();
+}
+
+/* =========================
+   HUD
+========================= */
+
+function updateHUD(){
+  const me=getMe();
+
+  if(!me){
+    return;
+  }
+
+  const hp=
+    Math.max(
       0,
-      7,
+      me.hp/me.maxHp
+    );
+
+  const energy=
+    Math.max(
+      0,
+      me.energy/100
+    );
+
+  const xpNeeded=
+    me.xpNeeded||
+    100;
+
+  const xp=
+    Math.max(
+      0,
+      Math.min(
+        1,
+        (me.xp||0)/
+        xpNeeded
+      )
+    );
+
+  hpFill.style.width=
+    hp*100+"%";
+
+  energyFill.style.width=
+    energy*100+"%";
+
+  xpFill.style.width=
+    xp*100+"%";
+
+  levelText.textContent=
+    "LEVEL "+
+    (me.level||1);
+
+  xpText.textContent=
+    "XP "+
+    Math.floor(me.xp||0)+
+    " / "+
+    Math.floor(xpNeeded);
+
+  coinText.textContent=
+    me.coins||0;
+
+  bombText.textContent=
+    me.bombs||0;
+
+  potionText.textContent=
+    me.potions||0;
+
+  laserText.textContent=
+    me.lasers||0;
+}
+
+/* =========================
+   MINIMAP
+========================= */
+
+function drawMinimap(){
+  mctx.clearRect(
+    0,0,
+    minimap.width,
+    minimap.height
+  );
+
+  mctx.fillStyle=
+    "rgba(25,29,35,.92)";
+
+  mctx.fillRect(
+    0,0,
+    minimap.width,
+    minimap.height
+  );
+
+  const sx=
+    minimap.width/world.w;
+
+  const sy=
+    minimap.height/world.h;
+
+  /*
+  MAP BORDER
+  */
+  mctx.strokeStyle=
+    "rgba(255,255,255,.45)";
+
+  mctx.strokeRect(
+    1,1,
+    minimap.width-2,
+    minimap.height-2
+  );
+
+  /*
+  야생은 너무 많으므로
+  작은 점
+  */
+  mctx.fillStyle=
+    "rgba(255,152,0,.50)";
+
+  for(const w of state.wilds){
+    mctx.fillRect(
+      w.x*sx,
+      w.y*sy,
+      2,2
+    );
+  }
+
+  /*
+  BOTS
+  */
+  mctx.fillStyle="#ef5350";
+
+  for(const b of state.bots){
+    mctx.beginPath();
+
+    mctx.arc(
+      b.x*sx,
+      b.y*sy,
+      2.5,
+      0,Math.PI*2
+    );
+
+    mctx.fill();
+  }
+
+  /*
+  실제 플레이어
+  */
+  for(const p of state.players){
+
+    if(p.id===myId){
+      mctx.fillStyle="#42a5f5";
+    }else{
+      mctx.fillStyle="#ffffff";
+    }
+
+    mctx.beginPath();
+
+    mctx.arc(
+      p.x*sx,
+      p.y*sy,
+      p.id===myId
+        ?4
+        :3,
       0,
       Math.PI*2
     );
 
-    ctx.fillStyle =
-      "#e1bee7
+    mctx.fill();
+  }
+}
+
+/* =========================
+   MAIN DRAW
+========================= */
+
+function draw(){
+  const cam=
+    getCamera();
+
+  drawBackground(cam);
+
+  /*
+  아이템
+  */
+  for(const q of state.pickups){
+    drawPickup(q,cam);
+  }
+
+  /*
+  야생 50마리
+  */
+  for(const w of state.wilds){
+    drawWild(w,cam);
+  }
+
+  /*
+  봇
+  */
+  for(const b of state.bots){
+    drawDrone(
+      b,
+      cam,
+      "#ef5350",
+      false
+    );
+  }
+
+  /*
+  실제 플레이어
+  */
+  for(const p of state.players){
+
+    drawDrone(
+      p,
+      cam,
+      p.id===myId
+        ?"#42a5f5"
+        :"#66bb6a",
+      p.id===myId
+    );
+  }
+
+  /*
+  총알
+  */
+  for(const b of state.bullets){
+    drawBullet(b,cam);
+  }
+
+  /*
+  폭탄
+  */
+  for(const g of state.grenades){
+    drawGrenade(g,cam);
+  }
+
+  updateHUD();
+  drawMinimap();
+
+  requestAnimationFrame(draw);
+}
+
+requestAnimationFrame(draw);
+
+</script>
+
+</body>
+</html>
